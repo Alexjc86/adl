@@ -1,0 +1,382 @@
+P1:
+Background: Feed-forward neural networks (FNNs) are a fundamental type
+of artificial neural network where connections between nodes do not form
+cycles. These networks consist of an input layer, one or more hidden layers,
+and an output layer. The data flows in one direction, from the input nodes
+through the hidden nodes to the output nodes.
+  1. Stochastic Gradient Descent (SGD): SGD is a classic optimization
+algorithm commonly used for training neural networks. It updates the
+parameters by taking small steps in the direction of the negative gradient of
+the loss function with respect to the parameters.
+  2. Adam (Adaptive Moment Estimation): Adam is an adaptive optimization
+algorithm that computes adaptive learning rates for each parameter. It
+combines the advantages of AdaGrad and RMSProp by using both first and
+second-order moments of the gradients.
+  3. RMSprop (Root Mean Square Propagation): RMSprop is an adaptive
+learning rate optimization algorithm. It divides the learning rate by an
+exponentially decaying average of squared gradients, thereby reducing the
+learning rate for parameters that have large gradients.
+
+CODE:
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.optimizers import SGD, Adam, RMSprop
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+# Generate synthetic dataset
+X, y = make_classification(n_samples=1000, n_features=20, n_classes=2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Define the feed-forward neural network model
+def create_model():
+    model = Sequential([
+        Dense(64, input_shape=(X_train.shape[1],), activation='relu'),
+        Dense(32, activation='relu'),
+        Dense(1, activation='sigmoid')
+    ])
+    return model
+
+# Function to train and evaluate the model
+def train_and_evaluate(optimizer):
+    model = create_model()
+    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+    model.fit(X_train, y_train, epochs=20, batch_size=32, verbose=0)
+    y_pred = (model.predict(X_test) > 0.5).astype("int32")
+    accuracy = accuracy_score(y_test, y_pred)
+    return accuracy
+
+# Train and evaluate models with different optimizers
+optimizers = ['SGD', 'Adam', 'RMSprop']
+results = {}
+for optimizer in optimizers:
+    accuracy = train_and_evaluate(optimizer)
+    results[optimizer] = accuracy
+
+# Print the results
+for optimizer, accuracy in results.items():
+    print(f'Accuracy with {optimizer} optimizer: {accuracy:.4f}')
+_________________________________________________________________________________________________________________________________________________________
+
+P2: Background: Overfitting occurs when a model learns the training data too
+well, capturing noise or irrelevant patterns that do not generalize to unseen
+data. Regularization techniques introduce constraints on the model's
+parameters during training to prevent overfitting.
+Theory:
+1. L2 Regularization (Weight Decay): L2 regularization adds a penalty
+term to the loss function that penalizes large weights. It discourages complex
+models by adding the squared magnitude of weights to the loss function.
+2. Dropout: Dropout is a regularization technique that randomly drops a
+fraction of neurons during training. It helps prevent co-adaptation of neurons
+by introducing noise and encourages the network to learn more robust
+features.
+
+
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras import regularizers
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+# Generate synthetic dataset
+X, y = make_classification(n_samples=1000, n_features=20, n_classes=2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Define the feed-forward neural network model with regularization
+def create_regularized_model():
+    model = Sequential([
+        Dense(64, input_shape=(X_train.shape[1],), activation='relu', kernel_regularizer=regularizers.l2(0.01)),
+        Dropout(0.5),
+        Dense(32, activation='relu', kernel_regularizer=regularizers.l2(0.01)),
+        Dropout(0.5),
+        Dense(1, activation='sigmoid')
+    ])
+    return model
+
+# Function to train and evaluate the regularized model
+def train_and_evaluate_regularized_model():
+    model = create_regularized_model()
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    model.fit(X_train, y_train, epochs=20, batch_size=32, verbose=0)
+    y_pred = (model.predict(X_test) > 0.5).astype("int32")
+    accuracy = accuracy_score(y_test, y_pred)
+    return accuracy
+
+# Train and evaluate the regularized model
+accuracy_regularized = train_and_evaluate_regularized_model()
+
+print(f'Accuracy with regularization: {accuracy_regularized:.4f}')
+
+_______________________________________________________________________________________________________________________________
+
+P3:
+: The CIFAR-10 dataset consists of 60,000 32x32 color images
+in 10 classes, with 6,000 images per class. The classes are: airplane,
+automobile, bird, cat, deer, dog, frog, horse, ship, and truck. This dataset is
+commonly used for benchmarking computer vision algorithms.
+Theory:
+1. Convolutional Neural Networks (CNNs): CNNs are a class of deep
+neural networks that are particularly effective for image classification tasks.
+They consist of convolutional layers, pooling layers, and fully connected
+layers. CNNs can automatically learn hierarchical representations of features
+from images.
+
+
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.datasets import cifar10
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from tensorflow.keras.utils import to_categorical
+from sklearn.metrics import accuracy_score
+
+# Load CIFAR-10 dataset
+(X_train, y_train), (X_test, y_test) = cifar10.load_data()
+
+# Normalize pixel values to the range [0, 1]
+X_train = X_train.astype('float32') / 255.0
+X_test = X_test.astype('float32') / 255.0
+
+# One-hot encode the target labels
+y_train = to_categorical(y_train, num_classes=10)
+y_test = to_categorical(y_test, num_classes=10)
+
+# Define the CNN model
+def create_cnn_model():
+    model = Sequential([
+        Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)),
+        MaxPooling2D((2, 2)),
+        Conv2D(64, (3, 3), activation='relu', padding='same'),
+        MaxPooling2D((2, 2)),
+        Conv2D(64, (3, 3), activation='relu', padding='same'),
+        Flatten(),
+        Dense(64, activation='relu'),
+        Dense(10, activation='softmax')
+    ])
+    return model
+
+# Function to train and evaluate the CNN model
+def train_and_evaluate_cnn_model():
+    model = create_cnn_model()
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    model.fit(X_train, y_train, epochs=10, batch_size=64, verbose=1, validation_split=0.1)
+    y_pred = np.argmax(model.predict(X_test), axis=-1)
+    accuracy = accuracy_score(np.argmax(y_test, axis=-1), y_pred)
+    return accuracy
+
+# Train and evaluate the CNN model
+accuracy_cnn = train_and_evaluate_cnn_model()
+
+print(f'Accuracy of the CNN model on CIFAR-10 test set: {accuracy_cnn:.4f}')
+
+____________________________________________________________________________________________________________________________________
+P4: 
+
+Background: Autoencoders are a type of neural network designed for
+unsupervised learning. They consist of an encoder network that compresses
+the input data into a latent space representation, followed by a decoder
+network that reconstructs the original input from the latent space
+representation. Autoencoders are commonly used for tasks such as image
+denoising, dimensionality reduction, and anomaly detection.
+Theory:
+1. Encoder: The encoder network takes the input data and maps it to a lowerdimensional latent space representation.
+2. Decoder: The decoder network takes the latent space representation and
+reconstructs the original input data.
+3. Reconstruction Loss: The reconstruction loss measures the difference
+between the input data and the output of the decoder. Commonly used loss
+functions include mean squared error (MSE) or binary cross-entropy.
+
+CODE:
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+# Load MNIST dataset
+(X_train, _), (X_test, _) = mnist.load_data()
+
+# Normalize pixel values to the range [0, 1]
+X_train = X_train.astype('float32') / 255.0
+X_test = X_test.astype('float32') / 255.0
+
+# Flatten the images
+X_train = X_train.reshape((len(X_train), np.prod(X_train.shape[1:])))
+X_test = X_test.reshape((len(X_test), np.prod(X_test.shape[1:])))
+
+# Define the autoencoder model
+def create_autoencoder_model():
+    model = Sequential([
+        Dense(128, activation='relu', input_shape=(784,)),
+        Dense(64, activation='relu'),
+        Dense(32, activation='relu'),
+        Dense(64, activation='relu'),
+        Dense(128, activation='relu'),
+        Dense(784, activation='sigmoid')
+    ])
+    return model
+
+# Function to train the autoencoder model
+def train_autoencoder_model():
+    model = create_autoencoder_model()
+    model.compile(optimizer='adam', loss='binary_crossentropy')
+    model.fit(X_train, X_train, epochs=10, batch_size=256, shuffle=True, validation_data=(X_test, X_test))
+    return model
+
+# Train the autoencoder model
+autoencoder_model = train_autoencoder_model()
+
+# Predict outputs using the trained autoencoder model
+reconstructed_images = autoencoder_model.predict(X_test)
+
+# Display original and reconstructed images
+import matplotlib.pyplot as plt
+
+n = 10  # Number of images to display
+plt.figure(figsize=(20, 4))
+for i in range(n):
+    # Display original images
+    ax = plt.subplot(2, n, i + 1)
+    plt.imshow(X_test[i].reshape(28, 28))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+
+    # Display reconstructed images
+    ax = plt.subplot(2, n, i + 1 + n)
+    plt.imshow(reconstructed_images[i].reshape(28, 28))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+plt.show()
+__________________________________________________________________________________________________________________________________________________
+
+p5:
+Background: The MNIST dataset consists of 28x28 grayscale images of
+handwritten digits (0-9), along with their corresponding labels. It is a popular
+dataset for benchmarking machine learning algorithms, especially in the field
+of computer vision.
+Theory:
+1. Convolutional Neural Networks (CNNs): CNNs are a class of deep
+neural networks that are particularly effective for image classification tasks.
+They consist of convolutional layers, pooling layers, and fully connected
+layers. CNNs can automatically learn hierarchical representations of features
+from images.
+
+Code:
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+
+# Load MNIST dataset
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
+
+# Normalize pixel values to the range [0, 1]
+X_train = X_train.astype('float32') / 255.0
+X_test = X_test.astype('float32') / 255.0
+
+# Reshape the images to add a channel dimension (required for CNN)
+X_train = np.expand_dims(X_train, axis=-1)
+X_test = np.expand_dims(X_test, axis=-1)
+
+# One-hot encode the target labels
+y_train = tf.keras.utils.to_categorical(y_train, num_classes=10)
+y_test = tf.keras.utils.to_categorical(y_test, num_classes=10)
+
+# Define the CNN model
+def create_cnn_model():
+    model = Sequential([
+        Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),
+        MaxPooling2D((2, 2)),
+        Conv2D(64, (3, 3), activation='relu'),
+        MaxPooling2D((2, 2)),
+        Conv2D(64, (3, 3), activation='relu'),
+        Flatten(),
+        Dense(64, activation='relu'),
+        Dense(10, activation='softmax')
+    ])
+    return model
+
+# Function to train and evaluate the CNN model
+def train_and_evaluate_cnn_model():
+    model = create_cnn_model()
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    model.fit(X_train, y_train, epochs=5, batch_size=64, verbose=1, validation_data=(X_test, y_test))
+    return model
+
+# Train and evaluate the CNN model
+cnn_model = train_and_evaluate_cnn_model()
+
+______________________________________________________________________________________________________________________________________________________________________________________________________
+
+P6:Object detection is a computer vision task that involves
+identifying objects of interest within an image or video sequence. It is a
+fundamental problem in computer vision and serves as a building block for
+many higher-level tasks, such as object tracking, scene understanding, and
+activity recognition.
+There are several approaches to object detection, including traditional
+computer vision techniques and deep learning-based methods. Traditional
+methods often rely on handcrafted features and machine learning classifiers,
+such as support vector machines (SVM) or random forests, combined with
+techniques like sliding window and image segmentation.
+Deep learning-based approaches, particularly convolutional neural networks
+(CNNs), have shown remarkable success in object detection tasks. Models
+like YOLO (You Only Look Once), SSD (Single Shot MultiBox Detector),
+and Faster R-CNN (Region-based Convolutional Neural Network) have
+achieved state-of-the-art performance in terms of accuracy and speed.
+
+'CODE
+import cv2
+from matplotlib import pyplot as plt
+
+# Opening image
+img = cv2.imread("image.jpg") #Download image from the link
+
+# OpenCV opens images as BRG
+# but we want it as RGB and
+# we also need a grayscale
+# version
+img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+# Creates the environment
+# of the picture and shows it
+plt.subplot(1, 1, 1)
+plt.imshow(img_rgb)
+plt.show()
+
+# Use minSize because for not
+# bothering with extra-small
+# dots that would look like STOP signs
+stop_data = cv2.CascadeClassifier('stop_data.xml')
+found = stop_data.detectMultiScale(img_gray,
+								minSize =(20, 20))
+# Don't do anything if there's
+# no sign
+amount_found = len(found)
+
+if amount_found != 0:
+
+	# There may be more than one
+	# sign in the image
+	for (x, y, width, height) in found:
+
+		# We draw a green rectangle around
+		# every recognized sign
+		cv2.rectangle(img_rgb, (x, y),
+					(x + height, y + width),
+					(0, 255, 0), 5)
+
+# Creates the environment of
+# the picture and shows it
+plt.subplot(1, 1, 1)
+plt.imshow(img_rgb)
+plt.show()
